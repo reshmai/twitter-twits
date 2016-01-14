@@ -3,6 +3,7 @@
     public function index() {
       // we store all the apis in a variable
       $apis = Api::all();
+      require_once('./views/apis/index.php');
       print json_encode($apis);exit();
     }
 
@@ -30,16 +31,32 @@
     }
 
     public function signup(){
+      /*File upload $_FILES
+      Array
+      (
+          [fileToUpload] => Array
+              (
+                  [name] => TaxCertificateHome14to15.pdf
+                  [type] => application/pdf
+                  [tmp_name] => /tmp/phpHlDfcs
+                  [error] => 0
+                  [size] => 74912
+              )
 
+      )*/
+    if(!empty($_FILES)){
+        array_push($_POST, $_FILES);  
+      }      
       $api = Api::signup($_POST);
       $allusers = new stdClass();
-      if($api==1){
+      if($api!=0){
         $allusers = Api::all();
       }
 
+
       $result = new stdClass();
       $result->statusCode = 200;
-      $result->message = "User registered successfully.";
+      $result->message = $api;
       $result->data = $allusers;
 
       print json_encode($result);exit();
