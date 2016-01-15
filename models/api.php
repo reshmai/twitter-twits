@@ -60,64 +60,109 @@
       )*/
       $return = array();
       $message = '';
+      $currentDate = date("Y-m-d H:i:s");
       $db = Database::getInstance();
 
-      $stmt = $db->prepare("INSERT INTO users (fb_id, name, email, phone_number, alternate_phone_number, location, designation, experience_year, experience_month, willing_to_relocate, refer_me, created, modified) 
-      VALUES (:fb_id, :name, :email, :phone_number, :alternate_phone_number, :location, :designation, :experience_year, :experience_month, :willing_to_relocate, :refer_me, :created, :modified)");
-      $stmt->bindParam(':fb_id', $data['fb_id']);
-      $stmt->bindParam(':name', $data['name']);
-      $stmt->bindParam(':email', $data['email']);
-      $stmt->bindParam(':phone_number', $data['phone_number']);
-      $stmt->bindParam(':alternate_phone_number', $data['alternate_phone_number']);
-      $stmt->bindParam(':location', $data['location']);
-      $stmt->bindParam(':designation', $data['designation']);
-      $stmt->bindParam(':experience_year', $data['experience_year']);
-      $stmt->bindParam(':experience_month', $data['experience_month']);
-      $stmt->bindParam(':willing_to_relocate', $data['willing_to_relocate']);
-      $stmt->bindParam(':refer_me', $data['refer_me']);
-      $stmt->bindParam(':created', date("Y-m-d H:i:s"));
-      $stmt->bindParam(':modified', date("Y-m-d H:i:s"));    
-      $stmt->execute();
+      if(isset($data['fb_id'])){
 
-      // $aid = $db->prepare("select * from users"); 
-      // $aid->execute(); 
-      // $row = $aid->fetch(PDO::FETCH_NUM, PDO::FETCH_ORI_LAST);
+        $stmt = $db->prepare("INSERT INTO users (fb_id, name, email, phone_number, alternate_phone_number, location, designation, experience_year, experience_month, willing_to_relocate, refer_me, created, modified) 
+        VALUES (:fb_id, :name, :email, :phone_number, :alternate_phone_number, :location, :designation, :experience_year, :experience_month, :willing_to_relocate, :refer_me, :created, :modified)");
+        $stmt->bindParam(':fb_id', $data['fb_id']);
+        $stmt->bindParam(':name', $data['name']);
+        $stmt->bindParam(':email', $data['email']);
+        $stmt->bindParam(':phone_number', $data['phone_number']);
+        $stmt->bindParam(':alternate_phone_number', $data['alternate_phone_number']);
+        $stmt->bindParam(':location', $data['location']);
+        $stmt->bindParam(':designation', $data['designation']);
+        $stmt->bindParam(':experience_year', $data['experience_year']);
+        $stmt->bindParam(':experience_month', $data['experience_month']);
+        $stmt->bindParam(':willing_to_relocate', $data['willing_to_relocate']);
+        $stmt->bindParam(':refer_me', $data['refer_me']);
+        $stmt->bindParam(':created', $currentDate);
+        $stmt->bindParam(':modified', $currentDate);    
 
-      // print_R($row);die;
+        if($stmt->execute()){
+          $message .= "User data inserted!";
+        }
 
-      $stmt_last = $db->prepare("SELECT * FROM users ORDER BY id DESC LIMIT 10"); 
-      $stmt_last->execute(); 
-      $lastRow = $stmt_last->fetch(PDO::FETCH_ASSOC, PDO::FETCH_ORI_LAST);
+        $stmt_last = $db->prepare("SELECT * FROM users ORDER BY id DESC LIMIT 10"); 
+        $stmt_last->execute(); 
+        $lastRow = $stmt_last->fetch(PDO::FETCH_ASSOC, PDO::FETCH_ORI_LAST);
 
-      if(!empty($lastRow)){
+        if(!empty($lastRow) && !empty($data['fileToUpload'])){
           //UPLOAD resume
-          $uploaddir = '/upload/';
+
+          $uploaddir = FILES_PATH;
           $uploadfile = $uploaddir . basename($data['fileToUpload']['name']);
 
           if (move_uploaded_file($data['fileToUpload']['tmp_name'], $uploadfile)) {
-              $message .= "File is valid, and was successfully uploaded.\n";
+
+              $stmt_resume = $db->prepare("INSERT INTO resumes(uid, filename, title, created, modified) 
+              VALUES (:uid, :filename, :title, :created, :modified)");
+              $stmt_resume->bindParam(':uid', $lastRow['id']);
+              $stmt_resume->bindParam(':filename', $uploadfile);
+              $stmt_resume->bindParam(':title', $data['fileToUpload']['name']);
+              $stmt_resume->bindParam(':created', $currentDate);
+              $stmt_resume->bindParam(':modified', $currentDate);
+              $stmt_resume = $stmt_resume->execute();
+
+              $message .= "File is valid, and was successfully uploaded.";
+
           } else {
-              $message .= "Possible file upload attack!\n";
+              $message .= "Possible file upload attack!";
           }
 
-          $stmt_resume = $db->prepare("INSERT INTO resumes(uid, filename, title, created, modified) 
-          VALUES (:uid, :filename, :title, :created, :modified)");
-          $stmt_resume->bindParam(':uid', $lastRow['id']);
-          $stmt_resume->bindParam(':filename', $uploadfile);
-          $stmt_resume->bindParam(':title', $data['fileToUpload']['name']);
-          $stmt_resume->bindParam(':created', date("Y-m-d H:i:s"));
-          $stmt_resume->bindParam(':modified', date("Y-m-d H:i:s"));
-          $stmt_resume = $stmt_resume->execute();
-      }
-      
+        }
 
-      if($stmt_user==1){
-        return $return[$message];
+        if(!empty($data['technology'])){
+          $sql_tech = 'INSERT INTO technology (name) VALUES ';
+          $sql_tech_user = 'INSERT INTO user_technology (uid,name,created,modified) VALUES ';
+          $insertQuery = array();//insert data into Technology
+          $insertData = array();
+
+          $insertQueryTech = array();//insert data into user_technology
+          $insertDataTech = array();
+          $n = 0;
+
+          foreach ($data['technology'] as $row) {
+            $exist_technology = $db->prepare("SELECT * FROM technology WHERE name='".$row."'"); 
+            $exist_technology->execute();             
+            $get_technologies = $exist_technology->fetchAll();
+
+            if(empty($get_technologies)){
+              $insertQuery[] = '(:name' . $n . ')';
+              $insertData['name' . $n] = $row;
+
+              $insertQueryTech[] = '(:uid' . $n . ',:name' . $n .',:created' . $n .',:modified' . $n .')';
+
+              $insertDataTech['uid' . $n] = $lastRow['id'];
+              $insertDataTech['name' . $n] = $row;
+              $insertDataTech['created' . $n] = $currentDate;
+              $insertDataTech['modified' . $n] = $currentDate;
+
+              $n++;
+            }            
+          }
+
+          if (!empty($insertQuery)) {
+            $sql_tech .= implode(', ', $insertQuery);
+            $stmt = $db->prepare($sql_tech);
+
+            $sql_tech_user .= implode(', ', $insertQueryTech);
+            
+            $stmt_user_tech = $db->prepare($sql_tech_user);
+            if($stmt->execute($insertData) && $stmt_user_tech->execute($insertDataTech)){
+              $message .= "Technologies inserted!";
+            }
+          }
+        }
+          
+        
       }else{
-        return 0;
+        $message .= 0;
       }
 
-
+      return $message;
     }
   }
 ?>

@@ -4,7 +4,7 @@
       // we store all the apis in a variable
       $apis = Api::all();
       require_once('./views/apis/index.php');
-      print json_encode($apis);exit();
+      //print json_encode($apis);exit();
     }
 
     public function show() {
@@ -44,19 +44,24 @@
               )
 
       )*/
-    if(!empty($_FILES)){
-        array_push($_POST, $_FILES);  
-      }      
-      $api = Api::signup($_POST);
+
+      if(!empty($_FILES)){
+        $postData = array_merge($_POST, $_FILES);  
+      }else{
+        $postData = $_POST;
+      }  
+
+      $userSaved = Api::signup($postData);
+
       $allusers = new stdClass();
-      if($api!=0){
+      if($userSaved!=0){
         $allusers = Api::all();
       }
 
 
       $result = new stdClass();
       $result->statusCode = 200;
-      $result->message = $api;
+      $result->message = $userSaved;
       $result->data = $allusers;
 
       print json_encode($result);exit();
