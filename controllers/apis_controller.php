@@ -30,21 +30,13 @@
       print json_encode($api); exit();
     }
 
+    public function getprofile(){
+      
+    }
+
     public function signup(){
-      /*File upload $_FILES
-      Array
-      (
-          [fileToUpload] => Array
-              (
-                  [name] => TaxCertificateHome14to15.pdf
-                  [type] => application/pdf
-                  [tmp_name] => /tmp/phpHlDfcs
-                  [error] => 0
-                  [size] => 74912
-              )
-
-      )*/
-
+      
+      $message = '';
       if(!empty($_FILES)){
         $postData = array_merge($_POST, $_FILES);  
       }else{
@@ -54,17 +46,32 @@
       $userSaved = Api::signup($postData);
 
       $allusers = new stdClass();
-      if($userSaved!=0){
+      if($userSaved==1){
         $allusers = Api::all();
+        $message = 'User inserted successfully.';
       }
-
 
       $result = new stdClass();
       $result->statusCode = 200;
-      $result->message = $userSaved;
+      $result->message = $message;
       $result->data = $allusers;
 
       print json_encode($result);exit();
     }
+
+    //http://refer.local.com/apis/gettechnologies
+    public function gettechnologies(){
+
+      $technologies = Api::getTechnologies();
+
+      $result = new stdClass();
+      $result->statusCode = 200;
+      $result->message = "";
+      $result->data = $technologies;
+
+      print json_encode($result);exit();
+
+    }
+
   }
 ?>

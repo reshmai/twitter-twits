@@ -45,124 +45,163 @@
     }
 
     public static function signup($data){
-      /*File upload $_FILES
-      Array
-      (
-          [fileToUpload] => Array
-              (
-                  [name] => TaxCertificateHome14to15.pdf
-                  [type] => application/pdf
-                  [tmp_name] => /tmp/phpHlDfcs
-                  [error] => 0
-                  [size] => 74912
-              )
 
-      )*/
-      $return = array();
-      $message = '';
+      $return = 0;
       $currentDate = date("Y-m-d H:i:s");
       $db = Database::getInstance();
 
       if(isset($data['fb_id'])){
 
-        $stmt = $db->prepare("INSERT INTO users (fb_id, name, email, phone_number, alternate_phone_number, location, designation, experience_year, experience_month, willing_to_relocate, refer_me, created, modified) 
-        VALUES (:fb_id, :name, :email, :phone_number, :alternate_phone_number, :location, :designation, :experience_year, :experience_month, :willing_to_relocate, :refer_me, :created, :modified)");
-        $stmt->bindParam(':fb_id', $data['fb_id']);
-        $stmt->bindParam(':name', $data['name']);
-        $stmt->bindParam(':email', $data['email']);
-        $stmt->bindParam(':phone_number', $data['phone_number']);
-        $stmt->bindParam(':alternate_phone_number', $data['alternate_phone_number']);
-        $stmt->bindParam(':location', $data['location']);
-        $stmt->bindParam(':designation', $data['designation']);
-        $stmt->bindParam(':experience_year', $data['experience_year']);
-        $stmt->bindParam(':experience_month', $data['experience_month']);
-        $stmt->bindParam(':willing_to_relocate', $data['willing_to_relocate']);
-        $stmt->bindParam(':refer_me', $data['refer_me']);
-        $stmt->bindParam(':created', $currentDate);
-        $stmt->bindParam(':modified', $currentDate);    
+        $return = Api::addUser($data);
 
-        if($stmt->execute()){
-          $message .= "User data inserted!";
-        }
+        $lastRow = Api::getLastInsertedRow();
 
-        $stmt_last = $db->prepare("SELECT * FROM users ORDER BY id DESC LIMIT 10"); 
-        $stmt_last->execute(); 
-        $lastRow = $stmt_last->fetch(PDO::FETCH_ASSOC, PDO::FETCH_ORI_LAST);
-
+        //Upload Resume code
         if(!empty($lastRow) && !empty($data['fileToUpload'])){
-          //UPLOAD resume
-
-          $uploaddir = FILES_PATH;
-          $uploadfile = $uploaddir . basename($data['fileToUpload']['name']);
-
-          if (move_uploaded_file($data['fileToUpload']['tmp_name'], $uploadfile)) {
-
-              $stmt_resume = $db->prepare("INSERT INTO resumes(uid, filename, title, created, modified) 
-              VALUES (:uid, :filename, :title, :created, :modified)");
-              $stmt_resume->bindParam(':uid', $lastRow['id']);
-              $stmt_resume->bindParam(':filename', $uploadfile);
-              $stmt_resume->bindParam(':title', $data['fileToUpload']['name']);
-              $stmt_resume->bindParam(':created', $currentDate);
-              $stmt_resume->bindParam(':modified', $currentDate);
-              $stmt_resume = $stmt_resume->execute();
-
-              $message .= "File is valid, and was successfully uploaded.";
-
-          } else {
-              $message .= "Possible file upload attack!";
-          }
-
+          $return = Api::uploadResume($data['fileToUpload']); 
         }
 
+        //Insert technologies code
         if(!empty($data['technology'])){
-          $sql_tech = 'INSERT INTO technology (name) VALUES ';
-          $sql_tech_user = 'INSERT INTO user_technology (uid,name,created,modified) VALUES ';
-          $insertQuery = array();//insert data into Technology
-          $insertData = array();
-
-          $insertQueryTech = array();//insert data into user_technology
-          $insertDataTech = array();
-          $n = 0;
-
-          foreach ($data['technology'] as $row) {
-            $exist_technology = $db->prepare("SELECT * FROM technology WHERE name='".$row."'"); 
-            $exist_technology->execute();             
-            $get_technologies = $exist_technology->fetchAll();
-
-            if(empty($get_technologies)){
-              $insertQuery[] = '(:name' . $n . ')';
-              $insertData['name' . $n] = $row;
-
-              $insertQueryTech[] = '(:uid' . $n . ',:name' . $n .',:created' . $n .',:modified' . $n .')';
-
-              $insertDataTech['uid' . $n] = $lastRow['id'];
-              $insertDataTech['name' . $n] = $row;
-              $insertDataTech['created' . $n] = $currentDate;
-              $insertDataTech['modified' . $n] = $currentDate;
-
-              $n++;
-            }            
-          }
-
-          if (!empty($insertQuery)) {
-            $sql_tech .= implode(', ', $insertQuery);
-            $stmt = $db->prepare($sql_tech);
-
-            $sql_tech_user .= implode(', ', $insertQueryTech);
-            
-            $stmt_user_tech = $db->prepare($sql_tech_user);
-            if($stmt->execute($insertData) && $stmt_user_tech->execute($insertDataTech)){
-              $message .= "Technologies inserted!";
-            }
-          }
-        }
-          
+          $return = Api::addTechnology($data['technology']);
+        }          
         
       }else{
-        $message .= 0;
+        $return = 0;
       }
 
-      return $message;
+      return $return;
+    }
+
+    public static function getLastInsertedRow(){
+      $db = Database::getInstance();
+      $stmt_last = $db->prepare("SELECT * FROM users ORDER BY id DESC LIMIT 10"); 
+      $stmt_last->execute(); 
+      $lastRow = $stmt_last->fetch(PDO::FETCH_ASSOC, PDO::FETCH_ORI_LAST);
+      return $lastRow;
+
+    }
+    public static function addTechnology($technology){
+
+      $return = 0;
+      $db = Database::getInstance();
+      $sql_tech = 'INSERT INTO technology (name) VALUES ';
+      $sql_tech_user = 'INSERT INTO user_technology (uid,name,created,modified) VALUES ';
+            
+      $existTechnologies = Api::checkTechnologyExist($technology);
+
+      if (!empty($existTechnologies->prepareTechnologyQuery) && isset($existTechnologies->prepareTechnologyQuery)) {
+        $sql_tech .= implode(', ', $existTechnologies->prepareTechnologyQuery);
+        $stmt = $db->prepare($sql_tech);
+        $stmt->execute($existTechnologies->prepareTechnologyData);
+      }
+      if(!empty($existTechnologies->userTechnologyqData)){
+        $sql_tech_user .= implode(', ', $existTechnologies->userTechnologyqQuery);      
+        $stmt_user_tech = $db->prepare($sql_tech_user);
+        $stmt_user_tech->execute($existTechnologies->userTechnologyqData); 
+        $return = 1;
+      }
+
+      return $return;
+    }
+
+    public static function checkTechnologyExist($technology){
+      $technologyObj = new stdClass();
+      $db = Database::getInstance();
+      $prepareTechnologyQuery = array();//insert data into Technology
+      $prepareTechnologyData = array();
+
+      $userTechnologyqQuery = array();//insert data into user_technology
+      $userTechnologyqData = array();
+      $n = 0;
+      $lastRow = Api::getLastInsertedRow();
+      $currentDate = date("Y-m-d H:i:s");
+
+      foreach ($technology as $row) {
+        $exist_technology = $db->prepare("SELECT * FROM technology WHERE name='".$row."'"); 
+        $exist_technology->execute();             
+        $get_exist_technologies = $exist_technology->fetchAll();
+
+        if(empty($get_exist_technologies)){
+          $technologyObj->prepareTechnologyQuery[] = '(:name' . $n . ')';
+          $technologyObj->prepareTechnologyData['name' . $n] = $row;
+        }  
+
+        $technologyObj->userTechnologyqQuery[] = '(:uid' . $n . ',:name' . $n .',:created' . $n .',:modified' . $n .')';
+        $technologyObj->userTechnologyqData['uid' . $n] = $lastRow['id'];
+        $technologyObj->userTechnologyqData['name' . $n] = $row;
+        $technologyObj->userTechnologyqData['created' . $n] = $currentDate;
+        $technologyObj->userTechnologyqData['modified' . $n] = $currentDate;
+
+        $n++;        
+      }
+
+      return $technologyObj;
+    }
+
+    public static function uploadResume($fileToUpload) {
+
+      $return = 0;
+      $uploaddir = FILES_PATH;
+      $uploadfile = $uploaddir . basename($fileToUpload['name']);
+      $db = Database::getInstance();
+      $lastRow = Api::getLastInsertedRow();
+      $currentDate = date("Y-m-d H:i:s");
+
+      if (move_uploaded_file($fileToUpload['tmp_name'], $uploadfile)) {
+
+          $stmt_resume = $db->prepare("INSERT INTO resumes(uid, filename, title, created, modified) 
+          VALUES (:uid, :filename, :title, :created, :modified)");
+
+          $stmt_resume->bindParam(':uid', $lastRow['id']);
+          $stmt_resume->bindParam(':filename', $uploadfile);
+          $stmt_resume->bindParam(':title', $fileToUpload['name']);
+          $stmt_resume->bindParam(':created', $currentDate);
+          $stmt_resume->bindParam(':modified', $currentDate);
+          $stmt_resume = $stmt_resume->execute();
+
+          $return = 1;
+      } else {
+          $return = 0;
+      }
+      return $return;
+
+    }
+
+    public static function addUser($user){
+      $db = Database::getInstance();
+      $return = 0;
+      $currentDate = date("Y-m-d H:i:s");
+
+      $stmt = $db->prepare("INSERT INTO users (fb_id, name, email, phone_number, alternate_phone_number, location, designation, experience_year, experience_month, willing_to_relocate, refer_me, created, modified) 
+      VALUES (:fb_id, :name, :email, :phone_number, :alternate_phone_number, :location, :designation, :experience_year, :experience_month, :willing_to_relocate, :refer_me, :created, :modified)");
+      $stmt->bindParam(':fb_id', $user['fb_id']);
+      $stmt->bindParam(':name', $user['name']);
+      $stmt->bindParam(':email', $user['email']);
+      $stmt->bindParam(':phone_number', $user['phone_number']);
+      $stmt->bindParam(':alternate_phone_number', $user['alternate_phone_number']);
+      $stmt->bindParam(':location', $user['location']);
+      $stmt->bindParam(':designation', $user['designation']);
+      $stmt->bindParam(':experience_year', $user['experience_year']);
+      $stmt->bindParam(':experience_month', $user['experience_month']);
+      $stmt->bindParam(':willing_to_relocate', $user['willing_to_relocate']);
+      $stmt->bindParam(':refer_me', $user['refer_me']);
+      $stmt->bindParam(':created', $currentDate);
+      $stmt->bindParam(':modified', $currentDate);    
+
+      if($stmt->execute()){
+        $return = 1;
+      }
+      return $return;
+    }
+
+    public static function getTechnologies(){
+      $db = Database::getInstance();
+      $all_technology = $db->prepare("SELECT * FROM technology"); 
+      $all_technology->execute();             
+      $all_technology = $all_technology->fetchAll();
+      return $all_technology;
     }
   }
+
 ?>
