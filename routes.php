@@ -11,6 +11,7 @@
       case 'apis':
         // we need the model to query the database later in the controller
         require_once('models/api.php');
+        require_once('utilities/RequestParam.php');
         $controller = new apisController();
       break;
     }

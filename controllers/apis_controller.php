@@ -31,7 +31,16 @@
     }
 
     public function getprofile(){
-      
+
+      if(isset($_POST) && !empty($_POST[RequestParam::$FACEBOOK_ID])){
+        $currentUserProfile = Api::getProfile($_POST['fb_id']);
+        $result = new stdClass();
+        $result->statusCode = 200;
+        $result->message = $message;
+        $result->data = $currentUserProfile;
+
+        print json_encode($result);exit();
+      }
     }
 
     public function signup(){

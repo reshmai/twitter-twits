@@ -202,6 +202,27 @@
       $all_technology = $all_technology->fetchAll();
       return $all_technology;
     }
+
+    public static function getProfile($fb_id){      
+      $db = Database::getInstance();
+      $userProfile = $db->prepare("SELECT u.id, u.fb_id, u.name, u.email, u.phone_number, 
+        u.alternate_phone_number, u.location, u.designation, u.experience_year, 
+        u.experience_month, u.willing_to_relocate, u.refer_me, u.created, u.modified, ut.id as technology_id, ut.name as technology_name
+FROM users u LEFT JOIN user_technology ut ON u.id = ut.uid WHERE u.fb_id =:fb_id"); 
+      $userProfile->bindParam(':fb_id', $fb_id);
+      $userProfile->execute();             
+      $userProfile = $userProfile->fetchAll(PDO::FETCH_ASSOC);
+      $technology = array();
+      foreach ($userProfile as $key => $value) {
+        if(!empty($value['technology_name'])){
+          $technology[] = $value['technology_name'];
+        }
+      }
+      if(!empty($technology)){
+        $userProfile = array_merge($userProfile, $technology);
+      }
+      return $userProfile;
+    }
   }
 
 ?>
