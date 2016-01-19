@@ -33,7 +33,12 @@
     public function getprofile(){
 
       if(isset($_POST) && !empty($_POST[RequestParam::$FACEBOOK_ID])){
-        $currentUserProfile = Api::getProfile($_POST['fb_id']);
+        if(!empty($currentUserProfile)){
+          $message = "User profile dose not exist.";
+        }else{
+          $message = "User profile exist.";
+        }
+        $currentUserProfile = Api::getProfile(RequestParam::$FACEBOOK_ID);
         $result = new stdClass();
         $result->statusCode = 200;
         $result->message = $message;
@@ -44,7 +49,7 @@
     }
 
     public function signup(){
-      
+
       $message = '';
       if(!empty($_FILES)){
         $postData = array_merge($_POST, $_FILES);  
@@ -77,6 +82,24 @@
       $result->statusCode = 200;
       $result->message = "";
       $result->data = $technologies;
+
+      print json_encode($result);exit();
+
+    }
+
+    public function uploadresume(){
+
+      if(!empty($_FILES['fileToUpload'])){
+        $resume = Api::uploadResume($_FILES['fileToUpload']);
+        if($resume==1){
+          $message = 'Resume uploaded';
+        }
+      }
+
+      $result = new stdClass();
+      $result->statusCode = 200;
+      $result->message = $message;
+      $result->data = null;
 
       print json_encode($result);exit();
 

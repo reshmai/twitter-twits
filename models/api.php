@@ -215,12 +215,15 @@ FROM users u LEFT JOIN user_technology ut ON u.id = ut.uid WHERE u.fb_id =:fb_id
       $technology = array();
       foreach ($userProfile as $key => $value) {
         if(!empty($value['technology_name'])){
-          $technology[] = $value['technology_name'];
-        }
+          $technology['technology'][] = $value['technology_name'];          
+        }        
       }
+
       if(!empty($technology)){
-        $userProfile = array_merge($userProfile, $technology);
+
+        $userProfile = array_merge($userProfile[0], $technology);
       }
+
       return $userProfile;
     }
   }
