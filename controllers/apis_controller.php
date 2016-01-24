@@ -82,5 +82,24 @@
 
     }
 
+    public function uploadresume(){
+      echo "<pre>";print_r($_FILES);die;
+
+      if(isset($_FILES[RequestParam::$fileToUpload]) && isset($_POST[RequestParam::$FACEBOOK_ID])){
+        
+        $filesData = array();
+        $filesData[RequestParam::$fileToUpload] = $_FILES[RequestParam::$fileToUpload];
+        $filesData[RequestParam::$fileToUpload][RequestParam::$FACEBOOK_ID] = $_POST[RequestParam::$FACEBOOK_ID];
+        $resume = Api::uploadResume($filesData);
+
+        $result = new stdClass();
+        $result->statusCode = 200;
+        $result->message = "Resume uploaded suucessfully!";
+        $result->data = null;
+
+        print json_encode($result);exit();
+      }
+    }
+
   }
 ?>

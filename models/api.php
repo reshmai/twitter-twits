@@ -73,14 +73,26 @@
       return $return;
     }
 
+    public static function getUserByFacebookId($fb_id){
+
+      $db = Database::getInstance();
+      $userProfile = $db->prepare("SELECT * FROM users WHERE fb_id=:fb_id"); 
+      
+      $userProfile->bindParam(':fb_id', $fb_id);
+      $userProfile->execute();             
+      $userProfile = $userProfile->fetchAll(PDO::FETCH_ASSOC);
+
+      return $userProfile;
+    }
+
     public static function getLastInsertedRow(){
       $db = Database::getInstance();
       $stmt_last = $db->prepare("SELECT * FROM users ORDER BY id DESC LIMIT 10"); 
       $stmt_last->execute(); 
       $lastRow = $stmt_last->fetch(PDO::FETCH_ASSOC, PDO::FETCH_ORI_LAST);
       return $lastRow;
-
     }
+
     public static function addTechnology($technology){
 
       $return = 0;
@@ -141,11 +153,18 @@
 
     public static function uploadResume($fileToUpload) {
 
+      if(!empty($fileToUpload[RequestParam::$fileToUpload][RequestParam::$FACEBOOK_ID])){
+        $facebookid = $fileToUpload[RequestParam::$fileToUpload][RequestParam::$FACEBOOK_ID];
+        $userRow = Api::getUserByFacebookId($facebookid);
+      }
+      else{
+        $userRow = Api::getLastInsertedRow();
+      }
       $return = 0;
       $uploaddir = FILES_PATH;
       $uploadfile = $uploaddir . basename($fileToUpload['name']);
       $db = Database::getInstance();
-      $lastRow = Api::getLastInsertedRow();
+      
       $currentDate = date("Y-m-d H:i:s");
 
       if (move_uploaded_file($fileToUpload['tmp_name'], $uploadfile)) {
@@ -153,7 +172,7 @@
           $stmt_resume = $db->prepare("INSERT INTO resumes(uid, filename, title, created, modified) 
           VALUES (:uid, :filename, :title, :created, :modified)");
 
-          $stmt_resume->bindParam(':uid', $lastRow['id']);
+          $stmt_resume->bindParam(':uid', $userRow['id']);
           $stmt_resume->bindParam(':filename', $uploadfile);
           $stmt_resume->bindParam(':title', $fileToUpload['name']);
           $stmt_resume->bindParam(':created', $currentDate);
