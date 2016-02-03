@@ -23,7 +23,9 @@
   // just a list of the controllers we have and their actions
   // we consider those "allowed" values
   $controllers = array('pages' => array('home', 'error'),
-    'apis' => array('index', 'show', 'login', 'signup', 'gettechnologies','getprofile','uploadresume'));
+    'apis' => array('index', 'show', 'login', 'signup',
+     'gettechnologies','getprofile','uploadresume',
+     'checkuserexist'));
 
   // check that the requested controller and action are both allowed
   // if someone tries to access something else he will be redirected to the error action of the pages controller

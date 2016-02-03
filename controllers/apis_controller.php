@@ -31,7 +31,7 @@
     }
 
     public function getprofile(){
-
+      print_r($_POST);die;  
       if(isset($_POST) && !empty($_POST[RequestParam::$FACEBOOK_ID])){
         if(!empty($currentUserProfile)){
           $message = "User profile dose not exist.";
@@ -89,20 +89,44 @@
 
     public function uploadresume(){
 
-      if(!empty($_FILES['fileToUpload'])){
-        $resume = Api::uploadResume($_FILES['fileToUpload']);
-        if($resume==1){
-          $message = 'Resume uploaded';
-        }
+      if(isset($_FILES[RequestParam::$fileToUpload]) && isset($_POST[RequestParam::$FACEBOOK_ID])){
+        
+        $filesData = array();
+        $filesData[RequestParam::$fileToUpload] = $_FILES[RequestParam::$fileToUpload];
+        $filesData[RequestParam::$fileToUpload][RequestParam::$FACEBOOK_ID] = $_POST[RequestParam::$FACEBOOK_ID];
+        $resume = Api::uploadResume($filesData);
+
+        $result = new stdClass();
+        $result->statusCode = 200;
+        $result->message = "Resume uploaded suucessfully!";
+        $result->data = null;
+
+        print json_encode($result);exit();
       }
 
-      $result = new stdClass();
-      $result->statusCode = 200;
-      $result->message = $message;
-      $result->data = null;
+    }
 
-      print json_encode($result);exit();
+    public function checkuserexist(){
 
+      if(!empty($_POST[RequestParam::$FACEBOOK_ID])){
+
+        $existUser = Api::getUserByFacebookId($_POST[RequestParam::$FACEBOOK_ID]);
+
+        if(!empty($existUser)){
+          $status = 200;
+          $message = 'User exist!';
+        }else{
+          $status = 201;
+          $message = 'User dose not exist!';
+        }
+
+        $result = new stdClass();
+        $result->statusCode = $status;
+        $result->message = $message;
+        $result->data = null;
+
+        print json_encode($result);exit();
+      }
     }
 
   }
