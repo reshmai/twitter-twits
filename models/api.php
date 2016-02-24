@@ -10,6 +10,8 @@
       $this->id      = $id;
       $this->author  = $author;
       $this->content = $content;
+
+      $this->facebook_id_var = RequestParam::$FACEBOOK_ID;
     }
 
     public static function all() {
@@ -50,7 +52,8 @@
       $currentDate = date("Y-m-d H:i:s");
       $db = Database::getInstance();
 
-      if(isset($data['fb_id'])){
+
+      if(isset($data[RequestParam::$FACEBOOK_ID])){
 
         $return = Api::addUser($data);
 
@@ -73,12 +76,15 @@
       return $return;
     }
 
-    public static function getUserByFacebookId($fb_id){
 
+    public static function getUserByFacebookId($facebook_id){
+
+      $facebook_id_var = RequestParam::$FACEBOOK_ID;
+      //ECHO "SELECT * FROM users WHERE {$facebook_id_var}=:{$facebook_id}";DIE;
       $db = Database::getInstance();
-      $userProfile = $db->prepare("SELECT * FROM users WHERE fb_id=:fb_id"); 
+      $userProfile = $db->prepare("SELECT * FROM users WHERE {$facebook_id_var}=:{$facebook_id_var}"); 
       
-      $userProfile->bindParam(':fb_id', $fb_id);
+      $userProfile->bindParam(":{$facebook_id_var}", $facebook_id);
       $userProfile->execute();             
       $userProfile = $userProfile->fetchAll(PDO::FETCH_ASSOC);
       
@@ -192,9 +198,11 @@
       $return = 0;
       $currentDate = date("Y-m-d H:i:s");
 
-      $stmt = $db->prepare("INSERT INTO users (fb_id, name, email, phone_number, alternate_phone_number, location, designation, experience_year, experience_month, willing_to_relocate, refer_me, created, modified) 
-      VALUES (:fb_id, :name, :email, :phone_number, :alternate_phone_number, :location, :designation, :experience_year, :experience_month, :willing_to_relocate, :refer_me, :created, :modified)");
-      $stmt->bindParam(':fb_id', $user['fb_id']);
+      $facebook_id_var = RequestParam::$FACEBOOK_ID;
+
+      $stmt = $db->prepare("INSERT INTO users ({$facebook_id_var}, name, email, phone_number, alternate_phone_number, location, designation, experience_year, experience_month, willing_to_relocate, refer_me, created, modified) 
+      VALUES (:{$facebook_id_var}, :name, :email, :phone_number, :alternate_phone_number, :location, :designation, :experience_year, :experience_month, :willing_to_relocate, :refer_me, :created, :modified)");
+      $stmt->bindParam(':{$facebook_id_var}', $user[RequestParam::$FACEBOOK_ID]);
       $stmt->bindParam(':name', $user['name']);
       $stmt->bindParam(':email', $user['email']);
       $stmt->bindParam(':phone_number', $user['phone_number']);
@@ -222,13 +230,15 @@
       return $all_technology;
     }
 
-    public static function getProfile($fb_id){      
+
+    public static function getProfile($facebook_id){    
+      $facebook_id_var = RequestParam::$FACEBOOK_ID;  
       $db = Database::getInstance();
-      $userProfile = $db->prepare("SELECT u.id, u.fb_id, u.name, u.email, u.phone_number, 
+      $userProfile = $db->prepare("SELECT u.id, u.{$facebook_id_var}, u.name, u.email, u.phone_number, 
         u.alternate_phone_number, u.location, u.designation, u.experience_year, 
         u.experience_month, u.willing_to_relocate, u.refer_me, u.created, u.modified, ut.id as technology_id, ut.name as technology_name
-FROM users u LEFT JOIN user_technology ut ON u.id = ut.uid WHERE u.fb_id =:fb_id"); 
-      $userProfile->bindParam(':fb_id', $fb_id);
+FROM users u LEFT JOIN user_technology ut ON u.id = ut.uid WHERE u.{$facebook_id_var} =:{$facebook_id_var}"); 
+      $userProfile->bindParam(':{$facebook_id_var}', $facebook_id);
       $userProfile->execute();             
       $userProfile = $userProfile->fetchAll(PDO::FETCH_ASSOC);
       $technology = array();

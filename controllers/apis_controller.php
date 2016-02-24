@@ -30,8 +30,9 @@
       print json_encode($api); exit();
     }
 
-    public function getprofile(){
-  
+
+    public function getProfile(){
+
       if(isset($_POST) && !empty($_POST[RequestParam::$FACEBOOK_ID])){
         if(!empty($currentUserProfile)){
           $message = "User profile dose not exist.";
@@ -74,7 +75,9 @@
     }
 
     //http://refer.local.com/apis/gettechnologies
-    public function gettechnologies(){
+
+    public function getTechnologies(){
+
 
       $technologies = Api::getTechnologies();
 
@@ -87,7 +90,7 @@
 
     }
 
-    public function uploadresume(){
+    public function uploadResume(){
 
       if(isset($_FILES[RequestParam::$fileToUpload]) && isset($_POST[RequestParam::$FACEBOOK_ID])){
         
@@ -106,7 +109,8 @@
 
     }
 
-    public function checkuserexist(){
+
+    public function checkUserExist(){
 
       if(!empty($_POST[RequestParam::$FACEBOOK_ID])){
 
@@ -128,7 +132,6 @@
         print json_encode($result);exit();
       }
     }
-   
 
   }
 ?>

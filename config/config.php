@@ -12,7 +12,11 @@ class Database {
     public static function getInstance() {
       if (!isset(self::$instance)) {
         $pdo_options[PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
+<<<<<<< HEAD
         self::$instance = new PDO('mysql:host=localhost;dbname=refer', 'root', 'clarion', $pdo_options);
+=======
+        self::$instance = new PDO('mysql:host=localhost;dbname=refer', 'root', 'poiuytrewq', $pdo_options);
+>>>>>>> 664d99d1a457edb046edc294f4f54260278744ae
       }
       return self::$instance;
     }
