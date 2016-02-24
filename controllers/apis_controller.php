@@ -31,7 +31,7 @@
     }
 
     public function getprofile(){
-      print_r($_POST);die;  
+  
       if(isset($_POST) && !empty($_POST[RequestParam::$FACEBOOK_ID])){
         if(!empty($currentUserProfile)){
           $message = "User profile dose not exist.";

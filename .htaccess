@@ -1,0 +1,13 @@
+Options +FollowSymLinks
+RewriteEngine On
+ 
+RewriteCond %{SCRIPT_FILENAME} !-d
+RewriteCond %{SCRIPT_FILENAME} !-f
+ 
+RewriteRule ^([a-zA-Z]+)/([a-zA-Z]+)$ .?controller=$1&action=$2
+ 
+RewriteRule ^([a-zA-Z]+)/([a-zA-Z]+)/([0-9]+)$ .?controller=$1&action=$2&id=$3
+
+
+
+
