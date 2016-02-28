@@ -38,6 +38,8 @@
     }
 
     public function update_user(){
+      // echo "<pre>";
+      // print_r($_POST);die;
       $message = '';
       if(!empty($_FILES)){
         $postData = array_merge($_POST, $_FILES);  
@@ -49,16 +51,14 @@
 
       $allusers = new stdClass();
       if($userSaved==1){
+        $statusCode = 200;
         $allusers = Api::all();
         $message = 'User updated successfully';
+      }else{
+        $statusCode = 201;
+        $message = 'Unable to update user. Please try again.';
       }
-
-      $result = new stdClass();
-      $result->statusCode = 200;
-      $result->message = $message;
-      $result->data = $allusers;
-
-      print json_encode($result);exit();
+      self::responseFormat($allusers, $message, $statusCode);
     }
 
     //http://refer.local.com/apis/get_skill_list
@@ -156,24 +156,22 @@
         $existUser = Api::getUserByFacebookId($_POST[RequestParam::$FACEBOOK_ID]);
 
         if(!empty($existUser)){
-          $status = 200;
+          $currentUserProfile = Api::getProfile($_POST[RequestParam::$FACEBOOK_ID]);
+          $statusCode = 200;
           $message = 'User exist';
         }else{
-          $status = 201;
+          $statusCode = 201;
           $message = 'User does not exist';
+          $currentUserProfile=null;
         }
 
-        $result = new stdClass();
-        $result->statusCode = $status;
-        $result->message = $message;
-        $result->data = null;
-
-        print json_encode($result);exit();
+        self::responseFormat($currentUserProfile, $message, $statusCode);
       }
     }
 
     public function responseFormat($result, $message, $statusCode){
               
+              //echo "<pre>";print_r($result);die;
         $return = new stdClass();
         $return->statusCode = $statusCode;
         $return->message = $message;

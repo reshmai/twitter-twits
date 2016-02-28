@@ -261,7 +261,7 @@
 FROM users u WHERE u.{$facebook_id_var} =:facebook_id"); 
       $userProfile->bindParam(':facebook_id', $facebook_id);
       $userProfile->execute();             
-      $userProfile = $userProfile->fetchAll(PDO::FETCH_ASSOC);
+      $userProfile = $userProfile->fetch(PDO::FETCH_ASSOC);
       
       return $userProfile;
     }
