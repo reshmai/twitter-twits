@@ -65,8 +65,8 @@
         }
 
         //Insert technologies code
-        if(!empty($data['technology'])){
-          $return = Api::addTechnology($data['technology']);
+        if(!empty($data['skill'])){
+          $return = Api::addSkill($data['skill']);
         }          
         
       }else{
@@ -99,62 +99,62 @@
       return $lastRow;
     }
 
-    public static function addTechnology($technology){
+    public static function addSkill($skill){
 
       $return = 0;
       $db = Database::getInstance();
-      $sql_tech = 'INSERT INTO technology (name) VALUES ';
-      $sql_tech_user = 'INSERT INTO user_technology (uid,name,created,modified) VALUES ';
+      $sql_tech = 'INSERT INTO skill (name) VALUES ';
+      $sql_tech_user = 'INSERT INTO user_skill (uid,name,created,modified) VALUES ';
             
-      $existTechnologies = Api::checkTechnologyExist($technology);
+      $existSkills = Api::checkSkillExist($skill);
 
-      if (!empty($existTechnologies->prepareTechnologyQuery) && isset($existTechnologies->prepareTechnologyQuery)) {
-        $sql_tech .= implode(', ', $existTechnologies->prepareTechnologyQuery);
+      if (!empty($existSkills->prepareSkillQuery) && isset($existSkills->prepareSkillQuery)) {
+        $sql_tech .= implode(', ', $existSkills->prepareSkillQuery);
         $stmt = $db->prepare($sql_tech);
-        $stmt->execute($existTechnologies->prepareTechnologyData);
+        $stmt->execute($existSkills->prepareSkillData);
       }
-      if(!empty($existTechnologies->userTechnologyqData)){
-        $sql_tech_user .= implode(', ', $existTechnologies->userTechnologyqQuery);      
+      if(!empty($existSkills->userSkillqData)){
+        $sql_tech_user .= implode(', ', $existSkills->userSkillqQuery);      
         $stmt_user_tech = $db->prepare($sql_tech_user);
-        $stmt_user_tech->execute($existTechnologies->userTechnologyqData); 
+        $stmt_user_tech->execute($existSkills->userSkillqData); 
         $return = 1;
       }
 
       return $return;
     }
 
-    public static function checkTechnologyExist($technology){
-      $technologyObj = new stdClass();
+    public static function checkSkillExist($skill){
+      $skillObj = new stdClass();
       $db = Database::getInstance();
-      $prepareTechnologyQuery = array();//insert data into Technology
-      $prepareTechnologyData = array();
+      $prepareSkillQuery = array();//insert data into Skill
+      $prepareSkillData = array();
 
-      $userTechnologyqQuery = array();//insert data into user_technology
-      $userTechnologyqData = array();
+      $userSkillqQuery = array();//insert data into user_skill
+      $userSkillqData = array();
       $n = 0;
       $lastRow = Api::getLastInsertedRow();
       $currentDate = date("Y-m-d H:i:s");
 
-      foreach ($technology as $row) {
-        $exist_technology = $db->prepare("SELECT * FROM technology WHERE name='".$row."'"); 
-        $exist_technology->execute();             
-        $get_exist_technologies = $exist_technology->fetchAll();
+      foreach ($skill as $row) {
+        $exist_skill = $db->prepare("SELECT * FROM skill WHERE name='".$row."'"); 
+        $exist_skill->execute();             
+        $get_exist_technologies = $exist_skill->fetchAll();
 
         if(empty($get_exist_technologies)){
-          $technologyObj->prepareTechnologyQuery[] = '(:name' . $n . ')';
-          $technologyObj->prepareTechnologyData['name' . $n] = $row;
+          $skillObj->prepareSkillQuery[] = '(:name' . $n . ')';
+          $skillObj->prepareSkillData['name' . $n] = $row;
         }  
 
-        $technologyObj->userTechnologyqQuery[] = '(:uid' . $n . ',:name' . $n .',:created' . $n .',:modified' . $n .')';
-        $technologyObj->userTechnologyqData['uid' . $n] = $lastRow['id'];
-        $technologyObj->userTechnologyqData['name' . $n] = $row;
-        $technologyObj->userTechnologyqData['created' . $n] = $currentDate;
-        $technologyObj->userTechnologyqData['modified' . $n] = $currentDate;
+        $skillObj->userSkillqQuery[] = '(:uid' . $n . ',:name' . $n .',:created' . $n .',:modified' . $n .')';
+        $skillObj->userSkillqData['uid' . $n] = $lastRow['id'];
+        $skillObj->userSkillqData['name' . $n] = $row;
+        $skillObj->userSkillqData['created' . $n] = $currentDate;
+        $skillObj->userSkillqData['modified' . $n] = $currentDate;
 
         $n++;        
       }
 
-      return $technologyObj;
+      return $skillObj;
     }
 
     public static function uploadResume($fileToUpload) {
@@ -222,37 +222,47 @@
       return $return;
     }
 
-    public static function getTechnologies(){
+    public static function getSkills(){
       $db = Database::getInstance();
-      $all_technology = $db->prepare("SELECT * FROM technology"); 
-      $all_technology->execute();             
-      $all_technology = $all_technology->fetchAll();
-      return $all_technology;
+      $all_skill = $db->prepare("SELECT * FROM skill"); 
+      $all_skill->execute();             
+      $all_skill = $all_skill->fetchAll(PDO::FETCH_ASSOC);
+      return $all_skill;
     }
 
+    public static function getWorkingAs(){
+      $db = Database::getInstance();
+      $all_working_as = $db->prepare("SELECT working_as FROM users WHERE working_as IS NOT NULL GROUP BY working_as"); 
+      $all_working_as->execute();             
+      $all_working_as = $all_working_as->fetchAll(PDO::FETCH_ASSOC);
+      return $all_working_as;
+    }
+
+    public static function getDesignations(){
+      $db = Database::getInstance();
+      $all_designations = $db->prepare("SELECT designation FROM users WHERE designation IS NOT NULL GROUP BY working_as"); 
+      $all_designations->execute();             
+      $all_designations = $all_designations->fetchAll(PDO::FETCH_ASSOC);
+      return $all_designations;
+    }
+
+    public static function getUsers($phone_number){
+
+    }
 
     public static function getProfile($facebook_id){    
       $facebook_id_var = RequestParam::$FACEBOOK_ID;  
       $db = Database::getInstance();
       $userProfile = $db->prepare("SELECT u.id, u.{$facebook_id_var}, u.name, u.email, u.phone_number, 
         u.alternate_phone_number, u.location, u.designation, u.experience_year, 
-        u.experience_month, u.willing_to_relocate, u.refer_me, u.created, u.modified, ut.id as technology_id, ut.name as technology_name
-FROM users u LEFT JOIN user_technology ut ON u.id = ut.uid WHERE u.{$facebook_id_var} =:{$facebook_id_var}"); 
-      $userProfile->bindParam(':{$facebook_id_var}', $facebook_id);
+        u.experience_month, u.willing_to_relocate as willing_to_relocate, u.refer_me as refer_me,u.working_as,
+        CASE willing_to_relocate WHEN 1 THEN 'true' ELSE 'false' END as willing_to_relocate,  
+        CASE refer_me WHEN 1 THEN 'true' ELSE 'false' END as refer_me 
+FROM users u WHERE u.{$facebook_id_var} =:facebook_id"); 
+      $userProfile->bindParam(':facebook_id', $facebook_id);
       $userProfile->execute();             
       $userProfile = $userProfile->fetchAll(PDO::FETCH_ASSOC);
-      $technology = array();
-      foreach ($userProfile as $key => $value) {
-        if(!empty($value['technology_name'])){
-          $technology['technology'][] = $value['technology_name'];          
-        }        
-      }
-
-      if(!empty($technology)){
-
-        $userProfile = array_merge($userProfile[0], $technology);
-      }
-
+      
       return $userProfile;
     }
 

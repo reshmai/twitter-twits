@@ -20,37 +20,24 @@
       print json_encode($api);exit();
     }
 
-    public function login() {
-      // we store all the apis in a variable
-      if(isset($_POST['phonenumber']) && $_POST['password']){
-        $phonenumber = $_POST['phonenumber'];
-        $password = $_POST['password'];
-      }
-      $api = Api::login('4444444444', '@abc');
-      print json_encode($api); exit();
-    }
-
-
-    public function getProfile(){
+    public function get_user_profile(){
 
       if(isset($_POST) && !empty($_POST[RequestParam::$FACEBOOK_ID])){
-        if(!empty($currentUserProfile)){
-          $message = "User profile dose not exist.";
-        }else{
-          $message = "User profile exist.";
-        }
-        $currentUserProfile = Api::getProfile(RequestParam::$FACEBOOK_ID);
-        $result = new stdClass();
-        $result->statusCode = 200;
-        $result->message = $message;
-        $result->data = $currentUserProfile;
+        $currentUserProfile = Api::getProfile($_POST[RequestParam::$FACEBOOK_ID]);
 
-        print json_encode($result);exit();
+        if(empty($currentUserProfile)){
+          $message = "User does not exist";
+          $statusCode = 201;
+        }else{
+          $message = "User data received successfully";
+          $statusCode = 200;
+        }
+ 
+        self::responseFormat($currentUserProfile, $message, $statusCode);
       }
     }
 
-    public function signup(){
-
+    public function update_user(){
       $message = '';
       if(!empty($_FILES)){
         $postData = array_merge($_POST, $_FILES);  
@@ -63,7 +50,7 @@
       $allusers = new stdClass();
       if($userSaved==1){
         $allusers = Api::all();
-        $message = 'User inserted successfully.';
+        $message = 'User updated successfully';
       }
 
       $result = new stdClass();
@@ -74,23 +61,75 @@
       print json_encode($result);exit();
     }
 
-    //http://refer.local.com/apis/gettechnologies
+    //http://refer.local.com/apis/get_skill_list
 
-    public function getTechnologies(){
+    public function get_skill_list(){
 
 
-      $technologies = Api::getTechnologies();
-
-      $result = new stdClass();
-      $result->statusCode = 200;
-      $result->message = "";
-      $result->data = $technologies;
-
-      print json_encode($result);exit();
+      $skills = Api::getSkills();
+      if(empty($skills)){
+          $message = "Skills does not exist";
+          $statusCode = 201;
+        }else{
+          $message = "Skills exist";
+          $statusCode = 200;
+        }
+      self::responseFormat($skills, $message, $statusCode);
 
     }
 
-    public function uploadResume(){
+
+    public function get_job_list(){
+
+      $working_as = Api::getWorkingAs();
+      if(empty($working_as)){
+          $message = "no data exist for Working as:";
+          $statusCode = 201;
+        }else{
+          $message = "data exist";
+          $statusCode = 200;
+        }
+      self::responseFormat($working_as, $message, $statusCode);
+
+    }
+
+
+    public function get_designation_list(){
+
+
+      $designations = Api::getDesignations();
+      if(empty($designations)){
+          $message = "no data exist for Designation:";
+          $statusCode = 201;
+        }else{
+          $message = "data exist";
+          $statusCode = 200;
+        }
+      self::responseFormat($designations, $message, $statusCode);
+
+    }
+
+
+    public function get_user_list(){
+
+      if(!empty($_POST['phone_number'])){
+        $phone_number = explode(',', $_POST['phone_number']);
+      }
+
+      if(!empty($phone_number)){
+        $user_list = Api::getUsers($phone_number);
+        if(empty($user_list)){
+            $message = "No data exist";
+            $statusCode = 201;
+          }else{
+            $message = "Data exist";
+            $statusCode = 200;
+          }
+        self::responseFormat($user_list, $message, $statusCode);
+      }
+    }
+
+    public function upload_resume(){
 
       if(isset($_FILES[RequestParam::$fileToUpload]) && isset($_POST[RequestParam::$FACEBOOK_ID])){
         
@@ -101,7 +140,7 @@
 
         $result = new stdClass();
         $result->statusCode = 200;
-        $result->message = "Resume uploaded suucessfully!";
+        $result->message = "Resume uploaded succesfully!";
         $result->data = null;
 
         print json_encode($result);exit();
@@ -110,7 +149,7 @@
     }
 
 
-    public function checkUserExist(){
+    public function check_user_exist(){
 
       if(!empty($_POST[RequestParam::$FACEBOOK_ID])){
 
@@ -118,10 +157,10 @@
 
         if(!empty($existUser)){
           $status = 200;
-          $message = 'User exist!';
+          $message = 'User exist';
         }else{
           $status = 201;
-          $message = 'User dose not exist!';
+          $message = 'User does not exist';
         }
 
         $result = new stdClass();
@@ -131,6 +170,16 @@
 
         print json_encode($result);exit();
       }
+    }
+
+    public function responseFormat($result, $message, $statusCode){
+              
+        $return = new stdClass();
+        $return->statusCode = $statusCode;
+        $return->message = $message;
+        $return->data = $result;
+
+        print json_encode($return);exit();
     }
 
   }
