@@ -224,9 +224,9 @@
 
     public static function getSkills(){
       $db = Database::getInstance();
-      $all_skill = $db->prepare("SELECT * FROM skill"); 
+      $all_skill = $db->prepare("SELECT name FROM skill"); 
       $all_skill->execute();             
-      $all_skill = $all_skill->fetchAll(PDO::FETCH_ASSOC);
+      $all_skill = $all_skill->fetchAll(PDO::FETCH_COLUMN, 0);
       return $all_skill;
     }
 
@@ -234,7 +234,7 @@
       $db = Database::getInstance();
       $all_working_as = $db->prepare("SELECT working_as FROM users WHERE working_as IS NOT NULL GROUP BY working_as"); 
       $all_working_as->execute();             
-      $all_working_as = $all_working_as->fetchAll(PDO::FETCH_ASSOC);
+      $all_working_as = $all_working_as->fetchAll(PDO::FETCH_COLUMN, 0);
       return $all_working_as;
     }
 
@@ -242,7 +242,7 @@
       $db = Database::getInstance();
       $all_designations = $db->prepare("SELECT designation FROM users WHERE designation IS NOT NULL GROUP BY working_as"); 
       $all_designations->execute();             
-      $all_designations = $all_designations->fetchAll(PDO::FETCH_ASSOC);
+      $all_designations = $all_designations->fetchAll(PDO::FETCH_COLUMN, 0);
       return $all_designations;
     }
 
