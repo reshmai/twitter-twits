@@ -109,26 +109,6 @@
 
     }
 
-
-    public function get_user_list(){
-
-      if(!empty($_POST['phone_number'])){
-        $phone_number = explode(',', $_POST['phone_number']);
-      }
-
-      if(!empty($phone_number)){
-        $user_list = Api::getUsers($phone_number);
-        if(empty($user_list)){
-            $message = "No data exist";
-            $statusCode = 201;
-          }else{
-            $message = "Data exist";
-            $statusCode = 200;
-          }
-        self::responseFormat($user_list, $message, $statusCode);
-      }
-    }
-
     public function upload_resume(){
 
       if(isset($_FILES[RequestParam::$fileToUpload]) && isset($_POST[RequestParam::$FACEBOOK_ID])){
@@ -166,6 +146,25 @@
         }
 
         self::responseFormat($currentUserProfile, $message, $statusCode);
+      }
+    }
+    
+    public function get_user_list(){
+
+      if(!empty($_POST[RequestParam::$PHONE_NUMBER])){
+        $phone_number = $_POST[RequestParam::$PHONE_NUMBER];
+      }
+
+      if(!empty($phone_number)){
+        $user_list = Api::getUsers($phone_number);
+        if(empty($user_list)){
+            $message = "No data exist";
+            $statusCode = 201;
+          }else{
+            $message = "Data exist";
+            $statusCode = 200;
+          }
+        self::responseFormat($user_list, $message, $statusCode);
       }
     }
 

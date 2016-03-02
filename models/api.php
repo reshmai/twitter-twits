@@ -139,7 +139,7 @@
       // print_R($skill);die;
 
       foreach ($skill as $row) {
-        
+
         $exist_skill = $db->prepare("SELECT * FROM skill WHERE name='".$row."'"); 
         $exist_skill->execute();             
         $get_exist_technologies = $exist_skill->fetchAll();
@@ -251,7 +251,12 @@
     }
 
     public static function getUsers($phone_number){
+      $db = Database::getInstance();
 
+      $users_by_phone = $db->prepare("SELECT * FROM users WHERE phone_number IN({$phone_number}) order by id desc limit 3"); 
+      $users_by_phone->execute();             
+      $users_by_phone = $users_by_phone->fetchAll(PDO::FETCH_ASSOC);
+      return $users_by_phone;
     }
 
     public static function getProfile($facebook_id){    
