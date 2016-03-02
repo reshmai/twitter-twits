@@ -134,8 +134,12 @@
       $n = 0;
       $lastRow = Api::getLastInsertedRow();
       $currentDate = date("Y-m-d H:i:s");
+      $skill= explode(",",$skill);
+      // echo "<pre>";
+      // print_R($skill);die;
 
       foreach ($skill as $row) {
+        
         $exist_skill = $db->prepare("SELECT * FROM skill WHERE name='".$row."'"); 
         $exist_skill->execute();             
         $get_exist_technologies = $exist_skill->fetchAll();
@@ -194,31 +198,31 @@
     }
 
     public static function addUser($user){
+
       $db = Database::getInstance();
       $return = 0;
       $currentDate = date("Y-m-d H:i:s");
 
       $facebook_id_var = RequestParam::$FACEBOOK_ID;
 
-      $stmt = $db->prepare("INSERT INTO users ({$facebook_id_var}, name, email, phone_number, alternate_phone_number, location, designation, experience_year, experience_month, willing_to_relocate, refer_me, created, modified) 
-      VALUES (:{$facebook_id_var}, :name, :email, :phone_number, :alternate_phone_number, :location, :designation, :experience_year, :experience_month, :willing_to_relocate, :refer_me, :created, :modified)");
-      $stmt->bindParam(':{$facebook_id_var}', $user[RequestParam::$FACEBOOK_ID]);
-      $stmt->bindParam(':name', $user['name']);
-      $stmt->bindParam(':email', $user['email']);
-      $stmt->bindParam(':phone_number', $user['phone_number']);
-      $stmt->bindParam(':alternate_phone_number', $user['alternate_phone_number']);
-      $stmt->bindParam(':location', $user['location']);
-      $stmt->bindParam(':designation', $user['designation']);
-      $stmt->bindParam(':experience_year', $user['experience_year']);
-      $stmt->bindParam(':experience_month', $user['experience_month']);
-      $stmt->bindParam(':willing_to_relocate', $user['willing_to_relocate']);
-      $stmt->bindParam(':refer_me', $user['refer_me']);
-      $stmt->bindParam(':created', $currentDate);
-      $stmt->bindParam(':modified', $currentDate);    
+      $sql = "INSERT INTO users ({$facebook_id_var}, name, email, phone_number, alternate_phone_number, location, designation, experience_year, experience_month, willing_to_relocate, refer_me, created, modified) 
+      VALUES (:{$facebook_id_var}, :name, :email, :phone_number, :alternate_phone_number, :location, :designation, :experience_year, :experience_month, :willing_to_relocate, :refer_me, :created, :modified)";
+      $stmt = $db->prepare($sql);
+      $return = $stmt->execute(array(
+        ':facebook_id' => $user[RequestParam::$FACEBOOK_ID],
+        ':name'=> $user['name'],
+        ':email'=> $user['email'],
+        ':phone_number'=> $user['phone_number'],
+        ':alternate_phone_number'=>$user['alternate_phone_number'],
+        ':location'=>$user['location'],
+        ':designation'=> $user['designation'],
+        ':experience_year'=> $user['experience_year'],
+        ':experience_month'=>$user['experience_month'],
+        ':willing_to_relocate'=> $user['willing_to_relocate'],
+        ':refer_me'=>$user['refer_me'],
+        ':created'=>$currentDate,
+        ':modified'=>$currentDate));
 
-      if($stmt->execute()){
-        $return = 1;
-      }
       return $return;
     }
 
