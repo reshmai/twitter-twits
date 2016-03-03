@@ -216,8 +216,8 @@
         ':alternate_phone_number'=>$user['alternate_phone_number'],
         ':location'=>$user['location'],
         ':designation'=> $user['designation'],
-        ':experience_year'=> $user['experience_year'],
-        ':experience_month'=>$user['experience_month'],
+        ':experience_year'=> (int) $user['experience_year'],
+        ':experience_month'=> (int) $user['experience_month'],
         ':willing_to_relocate'=> $user['willing_to_relocate'],
         ':refer_me'=>$user['refer_me'],
         ':created'=>$currentDate,
@@ -262,17 +262,29 @@
     public static function getProfile($facebook_id){    
       $facebook_id_var = RequestParam::$FACEBOOK_ID;  
       $db = Database::getInstance();
-      $userProfile = $db->prepare("SELECT u.id, u.{$facebook_id_var}, u.name, u.email, u.phone_number, 
+      $userProfile = $db->prepare("SELECT u.{$facebook_id_var}, u.name, u.email, u.phone_number, 
         u.alternate_phone_number, u.location, u.designation, u.experience_year, 
-        u.experience_month, u.willing_to_relocate as willing_to_relocate, u.refer_me as refer_me,u.working_as,
-        CASE willing_to_relocate WHEN 1 THEN 'true' ELSE 'false' END as willing_to_relocate,  
-        CASE refer_me WHEN 1 THEN 'true' ELSE 'false' END as refer_me 
-FROM users u WHERE u.{$facebook_id_var} =:facebook_id"); 
+        u.experience_month, u.willing_to_relocate as willing_to_relocate, u.refer_me as refer_me,u.working_as, us.name as skill 
+        FROM users u 
+        LEFT JOIN user_skill us on us.uid=u.id 
+        WHERE u.{$facebook_id_var} =:facebook_id"); 
+
       $userProfile->bindParam(':facebook_id', $facebook_id);
-      $userProfile->execute();             
-      $userProfile = $userProfile->fetch(PDO::FETCH_ASSOC);
-      
-      return $userProfile;
+      $userProfile->execute();
+      $userProfile = $userProfile->fetchAll(PDO::FETCH_ASSOC);
+
+      $skill = array();
+      foreach($userProfile as $userKey=>$userRow){
+        $userProfile[$userKey]['willing_to_relocate'] = (bool) $userRow['willing_to_relocate'];
+        $userProfile[$userKey]['refer_me'] = (bool) $userRow['refer_me'];
+        $skill[] = $userRow['skill'];
+      }
+
+      $skill = implode(",", $skill);
+      $userProfile[0]['skill'] = $skill;
+      $profile = $userProfile[0];
+
+      return $profile;
     }
 
   }

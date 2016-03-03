@@ -56,10 +56,10 @@
         $message = 'User updated successfully';
       }else{
         $statusCode = 201;
-        $message = 'Unable to update user. Please try again.';
+        $message = 'Unable to update user. Please try abs(number)gain.';
       }
       self::responseFormat($allusers, $message, $statusCode);
-    }
+    } 
 
     //http://refer.local.com/apis/get_skill_list
 
@@ -176,7 +176,7 @@
         $return->message = $message;
         $return->data = $result;
 
-        print json_encode($return);exit();
+        print json_encode($return,JSON_NUMERIC_CHECK);exit();
     }
 
   }
