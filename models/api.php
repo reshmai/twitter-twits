@@ -244,7 +244,7 @@
 
     public static function getDesignations(){
       $db = Database::getInstance();
-      $all_designations = $db->prepare("SELECT designation FROM users WHERE designation IS NOT NULL GROUP BY working_as"); 
+      $all_designations = $db->prepare("SELECT designation FROM users WHERE designation IS NOT NULL GROUP BY designation"); 
       $all_designations->execute();             
       $all_designations = $all_designations->fetchAll(PDO::FETCH_COLUMN, 0);
       return $all_designations;
@@ -260,7 +260,7 @@
 FROM  `users` AS u
 LEFT JOIN user_skill AS us ON us.uid = u.id
 WHERE phone_number IN({$phone_number}) GROUP BY u.id
-ORDER BY u.id DESC"); 
+ORDER BY u.id DESC limit 3"); 
       $users_by_phone->execute();             
       $users_by_phone = $users_by_phone->fetchAll(PDO::FETCH_ASSOC);
       
@@ -268,7 +268,6 @@ ORDER BY u.id DESC");
         $users_by_phone[$userKey]['willing_to_relocate'] = (bool) $userRow['willing_to_relocate'];
         $users_by_phone[$userKey]['refer_me'] = (bool) $userRow['refer_me'];
       }
-
       return $users_by_phone;
     }
 
