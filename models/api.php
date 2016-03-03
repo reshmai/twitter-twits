@@ -252,10 +252,23 @@
 
     public static function getUsers($phone_number){
       $db = Database::getInstance();
-
-      $users_by_phone = $db->prepare("SELECT * FROM users WHERE phone_number IN({$phone_number}) order by id desc limit 3"); 
+      
+      $facebook_id_var = RequestParam::$FACEBOOK_ID; 
+      $users_by_phone = $db->prepare("SELECT DISTINCT u.{$facebook_id_var}, u.name, u.email, u.phone_number, 
+        u.alternate_phone_number, u.location, u.designation, u.experience_year, 
+        u.experience_month, u.willing_to_relocate as willing_to_relocate, u.refer_me as refer_me,u.working_as, GROUP_CONCAT(us.name) as skill
+FROM  `users` AS u
+LEFT JOIN user_skill AS us ON us.uid = u.id
+WHERE phone_number IN({$phone_number}) GROUP BY u.id
+ORDER BY u.id DESC"); 
       $users_by_phone->execute();             
       $users_by_phone = $users_by_phone->fetchAll(PDO::FETCH_ASSOC);
+      
+      foreach($users_by_phone as $userKey=>$userRow){
+        $users_by_phone[$userKey]['willing_to_relocate'] = (bool) $userRow['willing_to_relocate'];
+        $users_by_phone[$userKey]['refer_me'] = (bool) $userRow['refer_me'];
+      }
+
       return $users_by_phone;
     }
 
@@ -281,7 +294,9 @@
       }
 
       $skill = implode(",", $skill);
-      $userProfile[0]['skill'] = $skill;
+      if(!empty($skill)){
+        $userProfile[0]['skill'] = $skill;
+      }
       $profile = $userProfile[0];
 
       return $profile;
