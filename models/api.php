@@ -82,11 +82,11 @@
       $facebook_id_var = RequestParam::$FACEBOOK_ID;
       //ECHO "SELECT * FROM users WHERE {$facebook_id_var}=:{$facebook_id}";DIE;
       $db = Database::getInstance();
-      $userProfile = $db->prepare("SELECT * FROM users WHERE {$facebook_id_var}=:{$facebook_id_var}"); 
+      $userProfile = $db->prepare("SELECT * FROM users WHERE facebook_id=:facebook_id"); 
       
-      $userProfile->bindParam(":{$facebook_id_var}", $facebook_id);
+      $userProfile->bindParam(":facebook_id", $facebook_id);
       $userProfile->execute();             
-      $userProfile = $userProfile->fetchAll(PDO::FETCH_ASSOC);
+      $userProfile = $userProfile->fetch(PDO::FETCH_ASSOC);
       
       return $userProfile;
     }
@@ -165,7 +165,7 @@
 
       if(!empty($fileToUpload[RequestParam::$fileToUpload][RequestParam::$FACEBOOK_ID])){
         $facebookid = $fileToUpload[RequestParam::$fileToUpload][RequestParam::$FACEBOOK_ID];
-        $userRow = Api::getUserByFacebookId($facebookid);
+        $userExist = Api::getUserByFacebookId($facebookid);
       }
       else{
         $userRow = Api::getLastInsertedRow();
@@ -179,9 +179,14 @@
       $currentDate = date("Y-m-d H:i:s");
       if (move_uploaded_file($fileToUpload[RequestParam::$fileToUpload]['tmp_name'], $uploadfile)) {
 
+          
+          if(!isset($userExist['id'])){
           $stmt_resume = $db->prepare("INSERT INTO resumes(uid, filename, title, created, modified) 
           VALUES (:uid, :filename, :title, :created, :modified)");
-
+        }else{
+          $stmt_resume = $db->prepare("UPDATE resumes SET uid=:uid, filename=:filename, title=:title, modified=:modified WHERE facebook_id=:facebook_id");
+        }
+          $stmt_resume->bindParam(':facebook_id' => $user[RequestParam::$FACEBOOK_ID]),
           $stmt_resume->bindParam(':uid', $userRow['id']);
           $stmt_resume->bindParam(':filename', $uploadfile);
           $stmt_resume->bindParam(':title', $fileToUpload[RequestParam::$fileToUpload]['name']);
@@ -205,7 +210,11 @@
 
       $facebook_id_var = RequestParam::$FACEBOOK_ID;
 
-      $sql = "INSERT INTO users ({$facebook_id_var}, name, email, phone_number, alternate_phone_number, location, designation, experience_year, experience_month, willing_to_relocate, refer_me, created, modified) 
+      $userExist = Api::getUserByFacebookId($user['facebook_id']);      
+      //echo "<pre>";print_r($userExist);die;
+if(!isset($userExist['id'])){
+
+        $sql = "INSERT INTO users ({$facebook_id_var}, name, email, phone_number, alternate_phone_number, location, designation, experience_year, experience_month, willing_to_relocate, refer_me, created, modified) 
       VALUES (:{$facebook_id_var}, :name, :email, :phone_number, :alternate_phone_number, :location, :designation, :experience_year, :experience_month, :willing_to_relocate, :refer_me, :created, :modified)";
       $stmt = $db->prepare($sql);
       $return = $stmt->execute(array(
@@ -222,9 +231,37 @@
         ':refer_me'=>$user['refer_me'],
         ':created'=>$currentDate,
         ':modified'=>$currentDate));
+}else{
+  $sql = "UPDATE users SET name = :name, 
+    email = :email, 
+    phone_number= :phone_number, 
+    alternate_phone_number = :alternate_phone_number, 
+    location = :location, 
+    designation = :designation, 
+    experience_year = :experience_year, 
+    experience_month = :experience_month, 
+    willing_to_relocate =:willing_to_relocate, 
+    refer_me = :refer_me, 
+    modified = :modified WHERE 'facebook_id' = :facebook_id";
+
+      $stmt = $db->prepare($sql);
+      $return = $stmt->execute(array(
+        ':facebook_id' => $user[RequestParam::$FACEBOOK_ID],
+        ':name'=> $user['name'],
+        ':email'=> $user['email'],
+        ':phone_number'=> $user['phone_number'],
+        ':alternate_phone_number'=>$user['alternate_phone_number'],
+        ':location'=>$user['location'],
+        ':designation'=> $user['designation'],
+        ':experience_year'=> (int) $user['experience_year'],
+        ':experience_month'=> (int) $user['experience_month'],
+        ':willing_to_relocate'=> $user['willing_to_relocate'],
+        ':refer_me'=>$user['refer_me'],
+        ':modified'=>$currentDate));
+    }
 
       return $return;
-    }
+  }
 
     public static function getSkills(){
       $db = Database::getInstance();
