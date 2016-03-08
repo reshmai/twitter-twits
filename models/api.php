@@ -61,12 +61,12 @@
 
         //Upload Resume code
         if(!empty($lastRow) && !empty($data['fileToUpload'])){
-          $return = Api::uploadResume($data['fileToUpload']); 
+          $return = Api::uploadResume($data['fileToUpload'], $lastRow); 
         }
 
         //Insert technologies code
         if(!empty($data['skill'])){
-          $return = Api::addSkill($data['skill']);
+          $return = Api::addSkill($data['skill'], $lastRow);
         }          
         
       }else{
@@ -99,31 +99,66 @@
       return $lastRow;
     }
 
-    public static function addSkill($skill){
+    public static function addSkill($skill, $lastRowUser=null){
 
       $return = 0;
       $db = Database::getInstance();
-      $sql_tech = 'INSERT INTO skill (name) VALUES ';
-      $sql_tech_user = 'INSERT INTO user_skill (uid,name,created,modified) VALUES ';
-            
-      $existSkills = Api::checkSkillExist($skill);
+      
+      $skillExist = checkSkillExist($lastRowUser);
+      if(!isset($skillExist['id'])){
+        $sql_tech = 'INSERT INTO skill (name) VALUES ';
+        $sql_tech_user = 'INSERT INTO user_skill (uid,name,created,modified) VALUES ';
+        $existSkills = Api::prepareSkillInsert($skill);
 
-      if (!empty($existSkills->prepareSkillQuery) && isset($existSkills->prepareSkillQuery)) {
-        $sql_tech .= implode(', ', $existSkills->prepareSkillQuery);
-        $stmt = $db->prepare($sql_tech);
-        $stmt->execute($existSkills->prepareSkillData);
+        if (!empty($existSkills->prepareSkillQuery) && isset($existSkills->prepareSkillQuery)) {
+          $sql_tech .= implode(', ', $existSkills->prepareSkillQuery);
+          $stmt = $db->prepare($sql_tech);
+          $stmt->execute($existSkills->prepareSkillData);
+        }
+        if(!empty($existSkills->userSkillqData)){
+          $sql_tech_user .= implode(', ', $existSkills->userSkillqQuery);      
+          $stmt_user_tech = $db->prepare($sql_tech_user);
+          $stmt_user_tech->execute($existSkills->userSkillqData); 
+          $return = 1;
+        }
+      }else{
+
+        $sql_tech = 'UPDATE skill set name ';
+        $sql_tech_user = 'UPDATE user_skill SET ';
+        $existSkills = Api::prepareSkillUpdate($skill);
+
+        if (!empty($existSkills->prepareSkillQuery) && isset($existSkills->prepareSkillQuery)) {
+          $sql_tech .= implode(', ', $existSkills->prepareSkillQuery);
+          $stmt = $db->prepare($sql_tech);
+          $stmt->execute($existSkills->prepareSkillData);
+        }
+        if(!empty($existSkills->userSkillqData)){
+          $sql_tech_user .= implode(', ', $existSkills->userSkillqQuery);      
+          $stmt_user_tech = $db->prepare($sql_tech_user);
+          $stmt_user_tech->execute($existSkills->userSkillqData); 
+          $return = 1;
+        }
       }
-      if(!empty($existSkills->userSkillqData)){
-        $sql_tech_user .= implode(', ', $existSkills->userSkillqQuery);      
-        $stmt_user_tech = $db->prepare($sql_tech_user);
-        $stmt_user_tech->execute($existSkills->userSkillqData); 
-        $return = 1;
-      }
+            
+      
 
       return $return;
     }
 
-    public static function checkSkillExist($skill){
+    public static function checkSkillExist($lastRowUser){
+      $facebook_id_var = RequestParam::$FACEBOOK_ID;
+      //ECHO "SELECT * FROM users WHERE {$facebook_id_var}=:{$facebook_id}";DIE;
+      $db = Database::getInstance();
+      $userProfile = $db->prepare("SELECT * FROM users u inner join user_skill ur on us.uid=u.id WHERE u.facebook_id=:facebook_id"); 
+      
+      $userProfile->bindParam(":facebook_id", $facebook_id);
+      $userProfile->execute();             
+      $userProfile = $userProfile->fetch(PDO::FETCH_ASSOC);
+      
+      return $userProfile;
+    }
+
+    public static function prepareSkillInsert($skill){
       $skillObj = new stdClass();
       $db = Database::getInstance();
       $prepareSkillQuery = array();//insert data into Skill
@@ -158,19 +193,52 @@
         $n++;        
       }
 
+      public static function prepareSkillUpdate($skill){
+      $skillObj = new stdClass();
+      $db = Database::getInstance();
+      $prepareSkillQuery = array();//insert data into Skill
+      $prepareSkillData = array();
+
+      $userSkillqQuery = array();//insert data into user_skill
+      $userSkillqData = array();
+      $n = 0;
+      $lastRow = Api::getLastInsertedRow();
+      $currentDate = date("Y-m-d H:i:s");
+      $skill= explode(",",$skill);
+      // echo "<pre>";
+      // print_R($skill);die;
+
+      foreach ($skill as $row) {
+
+        $exist_skill = $db->prepare("SELECT * FROM skill WHERE name='".$row."'"); 
+        $exist_skill->execute();             
+        $get_exist_technologies = $exist_skill->fetchAll();
+
+        if(empty($get_exist_technologies)){
+          $skillObj->prepareSkillQuery[] = '(:name' . $n . ')';
+          $skillObj->prepareSkillData['name' . $n] = $row;
+        }  
+
+        $skillObj->userSkillqQuery[] = '(:uid' . $n . ',:name' . $n .',:created' . $n .',:modified' . $n .')';
+        $skillObj->userSkillqData['uid' . $n] = $lastRow['id'];
+        $skillObj->userSkillqData['name' . $n] = $row;
+        $skillObj->userSkillqData['created' . $n] = $currentDate;
+        $skillObj->userSkillqData['modified' . $n] = $currentDate;
+
+        $n++;        
+      }
+
+
       return $skillObj;
     }
 
-    public static function uploadResume($fileToUpload) {
+    public static function uploadResume($fileToUpload, $lastRowUser=null) {
 
       if(!empty($fileToUpload[RequestParam::$fileToUpload][RequestParam::$FACEBOOK_ID])){
         $facebookid = $fileToUpload[RequestParam::$fileToUpload][RequestParam::$FACEBOOK_ID];
-        $userExist = Api::getUserByFacebookId($facebookid);
+        $resumeExist = Api::checkResumeExistByFid($facebookid);
       }
-      else{
-        $userRow = Api::getLastInsertedRow();
-      }
-
+      
       $return = 0;
       $uploaddir = FILES_PATH;
       $uploadfile = $uploaddir . basename($fileToUpload[RequestParam::$fileToUpload]['name']);
@@ -179,15 +247,16 @@
       $currentDate = date("Y-m-d H:i:s");
       if (move_uploaded_file($fileToUpload[RequestParam::$fileToUpload]['tmp_name'], $uploadfile)) {
 
-          
-          if(!isset($userExist['id'])){
+        if($lastRowUser!=null){
           $stmt_resume = $db->prepare("INSERT INTO resumes(uid, filename, title, created, modified) 
           VALUES (:uid, :filename, :title, :created, :modified)");
+          $stmt_resume->bindParam(':uid', $lastRowUser['id']);
+          $stmt_resume->bindParam(':facebook_id' => $lastRowUser[RequestParam::$FACEBOOK_ID]), 
         }else{
           $stmt_resume = $db->prepare("UPDATE resumes SET uid=:uid, filename=:filename, title=:title, modified=:modified WHERE facebook_id=:facebook_id");
-        }
-          $stmt_resume->bindParam(':facebook_id' => $user[RequestParam::$FACEBOOK_ID]),
-          $stmt_resume->bindParam(':uid', $userRow['id']);
+          $stmt_resume->bindParam(':uid', $resumeExist['id']);
+          $stmt_resume->bindParam(':facebook_id' => $resumeExist[RequestParam::$FACEBOOK_ID]), 
+        }                   
           $stmt_resume->bindParam(':filename', $uploadfile);
           $stmt_resume->bindParam(':title', $fileToUpload[RequestParam::$fileToUpload]['name']);
           $stmt_resume->bindParam(':created', $currentDate);
@@ -336,6 +405,20 @@ ORDER BY u.id DESC limit 3");
       $profile = $userProfile[0];
 
       return $profile;
+    }
+
+    public static function checkResumeExistByFid($facebook_id){
+
+      $facebook_id_var = RequestParam::$FACEBOOK_ID;
+      //ECHO "SELECT * FROM users WHERE {$facebook_id_var}=:{$facebook_id}";DIE;
+      $db = Database::getInstance();
+      $userProfile = $db->prepare("SELECT * FROM users u inner join resumes r on r.uid=u.id WHERE u.facebook_id=:facebook_id"); 
+      
+      $userProfile->bindParam(":facebook_id", $facebook_id);
+      $userProfile->execute();             
+      $userProfile = $userProfile->fetch(PDO::FETCH_ASSOC);
+      
+      return $userProfile;
     }
 
   }
