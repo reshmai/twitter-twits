@@ -122,24 +122,24 @@
           $return = 1;
         }
       }else{
-
-        $sql_tech = 'UPDATE skill set name ';
-        $sql_tech_user = 'UPDATE user_skill SET ';
+        
         $existSkills = Api::prepareSkillUpdate($skill);
 
         if (!empty($existSkills->prepareSkillQuery) && isset($existSkills->prepareSkillQuery)) {
+          $sql_tech = 'UPDATE skill set name ';
           $sql_tech .= implode(', ', $existSkills->prepareSkillQuery);
           $stmt = $db->prepare($sql_tech);
           $stmt->execute($existSkills->prepareSkillData);
         }
         if(!empty($existSkills->userSkillqData)){
+
+          $sql_tech_user = 'UPDATE user_skill SET ';
           $sql_tech_user .= implode(', ', $existSkills->userSkillqQuery);      
           $stmt_user_tech = $db->prepare($sql_tech_user);
           $stmt_user_tech->execute($existSkills->userSkillqData); 
           $return = 1;
         }
-      }
-            
+      }           
       
 
       return $return;
@@ -215,15 +215,15 @@
         $get_exist_technologies = $exist_skill->fetchAll();
 
         if(empty($get_exist_technologies)){
-          $skillObj->prepareSkillQuery[] = '(:name' . $n . ')';
-          $skillObj->prepareSkillData['name' . $n] = $row;
+          $skillObj->prepareSkillQuery[] = ':name' . $n . '=>'. $row.')';
+         // $skillObj->prepareSkillData['name' . $n] = $row;
         }  
 
-        $skillObj->userSkillqQuery[] = '(:uid' . $n . ',:name' . $n .',:created' . $n .',:modified' . $n .')';
-        $skillObj->userSkillqData['uid' . $n] = $lastRow['id'];
-        $skillObj->userSkillqData['name' . $n] = $row;
-        $skillObj->userSkillqData['created' . $n] = $currentDate;
-        $skillObj->userSkillqData['modified' . $n] = $currentDate;
+        $skillObj->userSkillqQuery[] = ':uid' . $n . '=>'.$lastRow['id'].' ,:name' . $n . '=>'.$row.' ,:modified' . $n . '=>'.$currentDate.')';
+        // $skillObj->userSkillqData['uid' . $n] = $lastRow['id'];
+        // $skillObj->userSkillqData['name' . $n] = $row;
+        // $skillObj->userSkillqData['created' . $n] = $currentDate;
+        // $skillObj->userSkillqData['modified' . $n] = $currentDate;
 
         $n++;        
       }
