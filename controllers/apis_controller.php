@@ -38,27 +38,30 @@
     }
 
     public function update_user(){
-      // echo "<pre>";
-      // print_r($_POST);die;
+
       $message = '';
-      if(!empty($_FILES)){
-        $postData = array_merge($_POST, $_FILES);  
-      }else{
-        $postData = $_POST;
-      }  
+      
+      $api = new Api();
+      if($api->isValidRequest($_POST)){
 
-      $userSaved = Api::signup($postData);
+        $userSaved = $api->signup($_POST);
 
-      $allusers = new stdClass();
-      if($userSaved==1){
-        $statusCode = 200;
-        $allusers = Api::all();
-        $message = 'User updated successfully';
+        $allusers = new stdClass();
+        if($userSaved==1){
+          $statusCode = 200;
+          $user = Api::getUserByFacebookId($_POST[RequestParam::$FACEBOOK_ID]);
+          $message = 'User updated successfully';
+        }else{
+          $statusCode = 201;
+          $message = 'Unable to update user. Please try abs(number)gain.';
+        }
       }else{
         $statusCode = 201;
-        $message = 'Unable to update user. Please try abs(number)gain.';
+        $message = 'Please enter valid name, email, phone number and working as.';
       }
-      self::responseFormat($allusers, $message, $statusCode);
+      
+      self::responseFormat($users, $message, $statusCode);
+
     } 
 
     //http://refer.local.com/apis/get_skill_list
