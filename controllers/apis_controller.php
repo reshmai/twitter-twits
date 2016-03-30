@@ -5,169 +5,24 @@
       $apis = Api::all();
       require_once('./views/apis/index.php');
       //print json_encode($apis);exit();
+
     }
 
-    public function show() {
+    public function register_user(){
+      $data = json_decode(file_get_contents('php://input'), true);
 
-      // we expect a url of form ?controller=apis&action=show&id=x
-      // without an id we just redirect to the error page as we need the api id to find it in the database
-      if (!isset($_GET['id']))
-        return call('pages', 'error');
+      if(!empty($data[RequestParam::$senderPhoneNo]) && !empty($data[RequestParam::$gcmRegistrationToken])){
+        Api::saveUser($data);
 
-      // we use the given id to get the right api
-      $api = Api::find($_GET['id']);
-
-      print json_encode($api);exit();
-    }
-
-    public function get_user_profile(){
-
-      if(isset($_POST) && !empty($_POST[RequestParam::$FACEBOOK_ID])){
-        $currentUserProfile = Api::getProfile($_POST[RequestParam::$FACEBOOK_ID]);
-
-        if(empty($currentUserProfile)){
-          $message = "User does not exist";
-          $statusCode = 201;
-        }else{
-          $message = "User data received successfully";
-          $statusCode = 200;
-        }
- 
-        self::responseFormat($currentUserProfile, $message, $statusCode);
-      }
-    }
-
-    public function update_user(){
-
-      $message = '';
-      
-      $api = new Api();
-      if($api->isValidRequest($_POST)){
-
-        $userSaved = $api->signup($_POST);
-
-        $allusers = new stdClass();
-        if($userSaved==1){
-          $statusCode = 200;
-          $user = Api::getUserByFacebookId($_POST[RequestParam::$FACEBOOK_ID]);
-          $message = 'User updated successfully';
-        }else{
-          $statusCode = 201;
-          $message = 'Unable to update user. Please try abs(number)gain.';
-        }
+        $data = null;
+        $message = "User saved";
+        $statusCode = 200;
+        self::responseFormat($data, $message, $statusCode);
       }else{
+        $data = null;
+        $message = "Error: Please send correct values";
         $statusCode = 201;
-        $message = 'Please enter valid name, email, phone number and working as.';
-      }
-      
-      self::responseFormat($users, $message, $statusCode);
-
-    } 
-
-    //http://refer.local.com/apis/get_skill_list
-
-    public function get_skill_list(){
-
-
-      $skills = Api::getSkills();
-      if(empty($skills)){
-          $message = "Skills does not exist";
-          $statusCode = 201;
-        }else{
-          $message = "Skills exist";
-          $statusCode = 200;
-        }
-      self::responseFormat($skills, $message, $statusCode);
-
-    }
-
-
-    public function get_job_list(){
-
-      $working_as = Api::getWorkingAs();
-      if(empty($working_as)){
-          $message = "no data exist for Working as:";
-          $statusCode = 201;
-        }else{
-          $message = "data exist";
-          $statusCode = 200;
-        }
-      self::responseFormat($working_as, $message, $statusCode);
-
-    }
-
-
-    public function get_designation_list(){
-
-
-      $designations = Api::getDesignations();
-      if(empty($designations)){
-          $message = "no data exist for Designation:";
-          $statusCode = 201;
-        }else{
-          $message = "data exist";
-          $statusCode = 200;
-        }
-      self::responseFormat($designations, $message, $statusCode);
-
-    }
-
-    public function upload_resume(){
-
-      if(isset($_FILES[RequestParam::$fileToUpload]) && isset($_POST[RequestParam::$FACEBOOK_ID])){
-        
-        $filesData = array();
-        $filesData[RequestParam::$fileToUpload] = $_FILES[RequestParam::$fileToUpload];
-        $filesData[RequestParam::$fileToUpload][RequestParam::$FACEBOOK_ID] = $_POST[RequestParam::$FACEBOOK_ID];
-        $resume = Api::uploadResume($filesData);
-
-        $result = new stdClass();
-        $result->statusCode = 200;
-        $result->message = "Resume uploaded succesfully!";
-        $result->data = null;
-
-        print json_encode($result);exit();
-      }
-
-    }
-
-
-    public function check_user_exist(){
-
-      if(!empty($_POST[RequestParam::$FACEBOOK_ID])){
-
-        $existUser = Api::getUserByFacebookId($_POST[RequestParam::$FACEBOOK_ID]);
-
-        if(!empty($existUser)){
-          $currentUserProfile = Api::getProfile($_POST[RequestParam::$FACEBOOK_ID]);
-          $statusCode = 200;
-          $message = 'User exist';
-        }else{
-          $statusCode = 201;
-          $message = 'User does not exist';
-          $currentUserProfile=null;
-        }
-
-        self::responseFormat($currentUserProfile, $message, $statusCode);
-      }
-    }
-    
-    public function get_user_list(){
-
-      if(!empty($_POST[RequestParam::$PHONE_NUMBER])){
-        $phone_number = $_POST[RequestParam::$PHONE_NUMBER];
-      }
-
-      if(!empty($phone_number)){
-        $user_list = Api::getUsers($phone_number);
-        if(empty($user_list)){
-            $message = "No data exist";
-            $statusCode = 201;
-          }else{
-            $message = "Data exist";
-            $statusCode = 200;
-          }
-        self::responseFormat($user_list, $message, $statusCode);
+        self::responseFormat($data, $message, $statusCode);
       }
     }
 
@@ -182,5 +37,22 @@
         print json_encode($return,JSON_NUMERIC_CHECK);exit();
     }
 
+    public function sendmessage(){
+      $data = json_decode(file_get_contents('php://input'), true);
+
+      if(!empty($data[RequestParam::$senderPhoneNo]) && !empty($data[RequestParam::$gcmRegistrationToken])){
+       $data = Api::sendMessage($data);
+
+        $data = null;
+        $message = "User saved";
+        $statusCode = 200;
+        self::responseFormat($data, $message, $statusCode);
+      }else{
+        $data = null;
+        $message = "Error: Please send correct values";
+        $statusCode = 201;
+        self::responseFormat($data, $message, $statusCode);
+      }
+    }
   }
 ?>
