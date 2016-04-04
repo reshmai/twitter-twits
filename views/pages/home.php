@@ -94,6 +94,19 @@
     <!-- Bootstrap Core JavaScript -->
     <script src="lib/bootstrap/js/bootstrap.min.js"></script>
 
-</body>
+    <?php
+        require('twitteroauth/TwitteroOAuth.php'); // path to twitteroauth library
 
+        $consumerkey = 'licAQmTSFMrYLTBtNR1xJrViF';
+        $consumersecret = 'uVKRT1xhdQ8FCtNKSVFvDyGVZAKviM8lsHAXdt07MVrJ7Kcewv';
+        $accesstoken = '421027117-y0q8mCA58mnFz7ls1RwC1VXKk2GuECDxYa1E3H4q';
+        $accesstokensecret = 'NlWAC8yuEPnaHX1wNvqHo9V3btHmXF0MuGzbcKnvJV4RD';
+
+        $twitter = new TwitterOAuth($consumerkey, $consumersecret, $accesstoken, $accesstokensecret);
+         
+        $tweets = $twitter->get('https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name=421027117&count=10');
+        print_r($tweets);
+    ?>
+
+</body>
 </html>
